@@ -106,34 +106,49 @@ def get_rfi_matrix(df, user_id):
     avg_relevance = rfi_df['Relevance'].mean() if num_episodes else 0
     max_relevance = rfi_df['Relevance'].max() if num_episodes else 0
 
+    # Ensure observation_days is at least 1D for all operations
+    observation_days = np.atleast_1d(observation_days)
+    
     # New Feature 1: Activity Periodicity Score
     # Calculate autocorrelation to detect periodicity in activity patterns
-    if len(observation_days) > 7:  # Need sufficient data for meaningful autocorrelation
-        autocorr = np.correlate(observation_days, observation_days, mode='full')
-        # Take the center part (positive lags)
-        autocorr = autocorr[len(autocorr)//2:]
-        # Normalize
-        autocorr = autocorr / np.max(autocorr)
-        # Calculate periodicity as the sum of non-zero lag correlations
-        activity_periodicity_score = np.sum(autocorr[1:min(30, len(autocorr))]) / min(29, len(autocorr)-1)
+    if len(observation_days) > 7 and np.sum(observation_days) > 0:  # Need data and some activity
+        try:
+            autocorr = np.correlate(observation_days, observation_days, mode='full')
+            # Take the center part (positive lags)
+            autocorr = autocorr[len(autocorr)//2:]
+            # Normalize only if max > 0
+            if np.max(autocorr) > 0:
+                autocorr = autocorr / np.max(autocorr)
+                # Calculate periodicity as the sum of non-zero lag correlations
+                activity_periodicity_score = np.sum(autocorr[1:min(30, len(autocorr))]) / min(29, len(autocorr)-1)
+            else:
+                activity_periodicity_score = 0
+        except:
+            activity_periodicity_score = 0
     else:
         activity_periodicity_score = 0
 
     # New Feature 2: Inactivity Linearity (R² Score)
     # Calculate how well inactivity durations correlate with recency values for individual episodes
     if len(episodes) > 1:
-        individual_I_values = []
-        individual_R_values = []
+        try:
+            individual_I_values = []
+            individual_R_values = []
 
-        for start, duration in episodes:
-            last_day_of_episode = start + duration - 1
-            recency = len(observation_days) - last_day_of_episode - (1 if reference_day == 0 else 0)
-            individual_I_values.append(duration)
-            individual_R_values.append(recency)
+            for start, duration in episodes:
+                last_day_of_episode = start + duration - 1
+                recency = len(observation_days) - last_day_of_episode - (1 if reference_day == 0 else 0)
+                individual_I_values.append(duration)
+                individual_R_values.append(recency)
 
-        # Use linear regression to get R² score between individual I and R values
-        _, _, r_value, _, _ = stats.linregress(individual_R_values, individual_I_values)
-        inactivity_linearity = r_value ** 2  # R² score
+            # Check for variance before regression
+            if len(set(individual_R_values)) > 1 and len(set(individual_I_values)) > 1:
+                _, _, r_value, _, _ = stats.linregress(individual_R_values, individual_I_values)
+                inactivity_linearity = r_value ** 2  # R² score
+            else:
+                inactivity_linearity = 0
+        except:
+            inactivity_linearity = 0
     else:
         inactivity_linearity = 0
 
@@ -142,25 +157,31 @@ def get_rfi_matrix(df, user_id):
     active_indices = np.where(observation_days == 1)[0]
     if len(active_indices) > 1:
         gaps = np.diff(active_indices)
-        activity_variability = np.std(gaps)
+        activity_variability = np.std(gaps) if len(gaps) > 0 else 0
     else:
         activity_variability = 0
 
     # New Feature 4: Inactivity Growth Rate
     # Rate at which inactivity duration increases from one episode to the next
     if len(episodes) > 1:
-        episode_durations = [duration for _, duration in episodes]
-        growth_rates = [episode_durations[i]/episode_durations[i-1] if episode_durations[i-1] > 0 else 1
-                         for i in range(1, len(episode_durations))]
-        inactivity_growth_rate = np.mean(growth_rates)
+        try:
+            episode_durations = [duration for _, duration in episodes]
+            growth_rates = [episode_durations[i]/episode_durations[i-1] if episode_durations[i-1] > 0 else 1
+                             for i in range(1, len(episode_durations))]
+            inactivity_growth_rate = np.mean(growth_rates) if growth_rates else 1
+        except:
+            inactivity_growth_rate = 1
     else:
         inactivity_growth_rate = 1
 
     # New Feature 5: Recent Activity Density
     # Proportion of active days in the most recent 30-day period
     recent_window = min(30, len(observation_days))
-    recent_days = observation_days[-recent_window:]
-    recent_activity_density = np.sum(recent_days) / recent_window
+    if recent_window > 0:
+        recent_days = observation_days[-recent_window:]
+        recent_activity_density = np.sum(recent_days) / recent_window
+    else:
+        recent_activity_density = 0
 
     features = (
         activity_ratio,

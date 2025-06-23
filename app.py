@@ -98,10 +98,10 @@ def render_process_all_users(filtered_df):
         
             try:
                 # Calculate RFI matrix and features
-                rfi_matrix, features = get_rfi_matrix(filtered_df, user_id)
+                _, features = get_rfi_matrix(observation_df, user_id)
                 
                 # Calculate dormancy
-                dormancy_value = calculate_dormancy(observation_df, user_id, get_rfi_matrix)
+                dormancy_value = calculate_dormancy(observation_df, user_id)
                 
                 # Store results
                 results.append({
@@ -133,7 +133,8 @@ def render_process_all_users(filtered_df):
     
         # Display results
         st.subheader("Results Summary")
-        st.dataframe(final_df.head())
+        final_df = final_df.with_columns([pl.col(col).round(2) for col in final_df.columns if final_df[col].dtype in [pl.Float32, pl.Float64]])
+        st.dataframe(final_df.head(10))
     
         # Download button
         csv_data = final_df.to_pandas().to_csv(index=False)
