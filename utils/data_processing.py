@@ -108,8 +108,7 @@ def analyze_dropout_clients(pivot_df: pl.DataFrame):
         pivot_pandas["Longest_Inactivity_Streak"] = pivot_pandas.apply(longest_inactivity_streak, axis=1)
         
         # Identify different client types
-        dropout_clients = len(pivot_pandas[(pivot_pandas["Longest_Inactivity_Streak"] >= 120) | 
-                                         (pivot_pandas["Longest_Inactivity_Streak"] == 0)])
+        dropout_clients = len(pivot_pandas[(pivot_pandas["Longest_Inactivity_Streak"] >= 120)])
         
         active_100_clients = len(pivot_pandas[pivot_pandas["Longest_Inactivity_Streak"] == 0])
         

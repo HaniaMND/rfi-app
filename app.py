@@ -229,14 +229,15 @@ def main():
                     if error:
                         st.error(f"Error getting data info: {error}")
                     else:
-                        col1, col2, col3, col4 = st.columns(4)
+                        col1, col2 = st.columns(2)
                         with col1:
                             st.metric("Shape", f"{info['shape'][0]} x {info['shape'][1]}")
                         with col2:
                             st.metric("Date Range", f"{info['date_range'][0]} to {info['date_range'][1]}")
-                        with col3:
+                        col1, col2 = st.columns(2)
+                        with col1:
                             st.metric("Unique Dates", info['unique_dates'])
-                        with col4:
+                        with col2:
                             st.metric("Unique Users", info['unique_users'])
                         
                         # Display head

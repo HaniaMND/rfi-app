@@ -23,7 +23,7 @@ def plot_daily_active_users(pivot_df):
         
         daily_active_df['Date'] = pd.to_datetime(daily_active_df['Date'])
         
-        fig, ax = plt.subplots(figsize=(15, 7))
+        fig, ax = plt.subplots(figsize=(12, 5))
         sns.lineplot(data=daily_active_df, x='Date', y='Active_Users', ax=ax)
         ax.set_title('Daily Active Users Over Time')
         ax.set_xlabel('Date')
@@ -56,7 +56,7 @@ def plot_weekly_active_users(pivot_df):
         daily_active_df['Date'] = pd.to_datetime(daily_active_df['Date'])
         daily_active_df['Weekly_Active_Users'] = daily_active_df['Active_Users'].rolling(window=7).mean()
         
-        fig, ax = plt.subplots(figsize=(15, 7))
+        fig, ax = plt.subplots(figsize=(12, 5))
         sns.lineplot(data=daily_active_df, x='Date', y='Weekly_Active_Users', ax=ax)
         ax.set_title('Weekly Active Users (7-Day Rolling Average) Over Time')
         ax.set_xlabel('Date')
@@ -81,7 +81,7 @@ def plot_active_days_distribution(pivot_df):
             
         active_days_per_user = pivot_pandas.sum(axis=1)
         
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(8, 4))
         sns.histplot(active_days_per_user, bins=25, kde=True, ax=ax)
         ax.set_title('Distribution of Active Days Per User')
         ax.set_xlabel('Number of Active Days')
@@ -97,7 +97,7 @@ def plot_active_days_distribution(pivot_df):
 def plot_inactivity_streaks_distribution(streaks_df):
     """Plot distribution of longest inactivity streaks"""
     try:
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(8, 4))
         sns.histplot(streaks_df["Longest_Inactivity_Streak"], bins=10, kde=True, ax=ax)
         ax.set_title('Distribution of Longest Inactivity Streaks Per User')
         ax.set_xlabel('Longest Inactivity Streak (Days)')
